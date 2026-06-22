@@ -1,0 +1,14 @@
+.fc .event-long {
+  background-color: #ff9800 !important;
+  color: white !important;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.fc .event-normal {
+  background-color: #1976d2 !important;
+  color: white !important;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
