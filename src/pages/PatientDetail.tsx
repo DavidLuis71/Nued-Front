@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import PaymentIcon from "@mui/icons-material/Payment";
+import MoneyIcon from "@mui/icons-material/AttachMoney";
+import EditIcon from "@mui/icons-material/Edit";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
 import {
   Box,
   Typography,
@@ -7,13 +13,15 @@ import {
   TextField,
   Button,
   FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   RadioGroup,
   FormControlLabel,
   Radio,
   Stack,
+  Chip,
+  Divider,
+  IconButton,
+  Switch,
+  FormGroup,
 } from "@mui/material";
 import { apiFetch } from "../api/api";
 
@@ -30,7 +38,14 @@ type Appointment = {
   date: string;
   status: string;
   notes: string;
-  duration_minutes: number,
+  duration_minutes: number;
+  price: number;
+  payment_method: "cash" | "card";
+is_clinical: boolean;
+  appointment_types?: {
+    id: string;
+    name: string;
+  };
 };
 
 export default function PatientDetail() {
@@ -43,6 +58,8 @@ export default function PatientDetail() {
   const [selectedDate, setSelectedDate] = useState<string>("");
 const [availability, setAvailability] = useState<Appointment[]>([]);
 const [selectedSlot, setSelectedSlot] = useState<string>("");
+const [appointmentTypes, setAppointmentTypes] = useState<any[]>([]);
+const [selectedType, setSelectedType] = useState<string>("");
 
 const [editForm, setEditForm] = useState({
   date: "",
@@ -58,11 +75,15 @@ const [editForm, setEditForm] = useState({
     email: "",
   });
 
-  const [newAppointment, setNewAppointment] = useState({
+const [newAppointment, setNewAppointment] = useState({
   date: "",
   notes: "",
   status: "pending",
   duration_minutes: 30,
+  price: 0,
+  payment_method: "cash",
+  appointment_type_id: "",
+  is_clinical: false,
 });
 
 
@@ -83,6 +104,10 @@ const refreshData = async () => {
 
 const createAppointment = async () => {
   setErrorMsg(null);
+    if (!newAppointment.appointment_type_id) {
+    setErrorMsg("Selecciona un tipo de cita");
+    return;
+  }
 
   try {
     const res = await apiFetch("/appointments", {
@@ -111,10 +136,16 @@ const createAppointment = async () => {
       notes: "",
       status: "pending",
       duration_minutes: 30,
+      price:0,
+      payment_method: "cash",
+      appointment_type_id: "",
+      is_clinical: false,
     });
+    setSelectedType("");
 
     await refreshData();
   } catch (err) {
+    console.log(err)
     setErrorMsg("Error de conexión con el servidor");
   }
 };
@@ -173,6 +204,13 @@ const fetchPatient = async () => {
 
   useEffect(() => {
     fetchPatient();
+     const fetchTypes = async () => {
+    const res = await apiFetch("/appointment-types");
+    const data = await res.json();
+    setAppointmentTypes(data);
+  };
+
+  fetchTypes();
   }, [id]);
 
   const isSlotFree = (slot: Date, duration: number) => {
@@ -221,226 +259,430 @@ const generateSlots = (date: string) => {
   if (!patient) return <div>Cargando...</div>;
 
 return (
-  <Box sx={{ maxWidth: 1100, mx: "auto" }}>   
-    {/* DATOS PACIENTE */}
-    <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+  <Box sx={{ maxWidth: 1100, mx: "auto"}}>
+
+    {/* 🧷 PACIENTE STICKY HEADER */}
+    <Paper
+      sx={{
+        p: 3,
+        mb: 3,
+        borderRadius: 3,
+        position: "sticky",
+        top: 55,
+        zIndex: 10,
+        boxShadow: "0 8px 25px rgba(0,0,0,0.08)",
+      }}
+    >
       {editMode ? (
-        <Box>
-          <Typography variant="h6">
-            Editar paciente
-          </Typography>
+        <Stack spacing={2}>
+          <Typography variant="h6">Editar paciente</Typography>
 
-          <Stack spacing={2}>
-            <TextField
-              label="Nombre"
-              value={form.first_name}
-              onChange={(e) =>
-                setForm({ ...form, first_name: e.target.value })
-              }
-            />
+          <TextField
+            label="Nombre"
+            value={form.first_name}
+            onChange={(e) =>
+              setForm({ ...form, first_name: e.target.value })
+            }
+          />
 
-            <TextField
-              label="Apellidos"
-              value={form.last_name}
-              onChange={(e) =>
-                setForm({ ...form, last_name: e.target.value })
-              }
-            />
+          <TextField
+            label="Apellidos"
+            value={form.last_name}
+            onChange={(e) =>
+              setForm({ ...form, last_name: e.target.value })
+            }
+          />
 
-            <TextField
-              label="Teléfono"
-              value={form.phone}
-              onChange={(e) =>
-                setForm({ ...form, phone: e.target.value })
-              }
-            />
+          <TextField
+            label="Teléfono"
+            value={form.phone}
+            onChange={(e) =>
+              setForm({ ...form, phone: e.target.value })
+            }
+          />
 
-            <TextField
-              label="Email"
-              value={form.email}
-              onChange={(e) =>
-                setForm({ ...form, email: e.target.value })
-              }
-            />
+          <TextField
+            label="Email"
+            value={form.email}
+            onChange={(e) =>
+              setForm({ ...form, email: e.target.value })
+            }
+          />
 
-            <Stack direction="row" spacing={2}>
-              <Button variant="contained" onClick={updatePatient}>
-                Guardar cambios
-              </Button>
-
-              <Button onClick={() => setEditMode(false)}>
-                Cancelar
-              </Button>
-            </Stack>
+          <Stack direction="row" spacing={2}>
+            <Button variant="contained" onClick={updatePatient}>
+              Guardar
+            </Button>
+            <Button onClick={() => setEditMode(false)}>
+              Cancelar
+            </Button>
           </Stack>
-        </Box>
+        </Stack>
       ) : (
-        <Box>
-          <Typography variant="h6">
-            {patient.first_name} {patient.last_name}
-          </Typography>
+        <Stack >
+          <Box>
+            <Typography variant="h5" >
+              {patient.first_name} {patient.last_name}
+            </Typography>
 
-          <Typography color="text.secondary">
-            📞 {patient.phone}
-          </Typography>
+            <Typography color="text.secondary">
+              📞 {patient.phone} · ✉️ {patient.email}
+            </Typography>
+          </Box>
 
-          <Typography color="text.secondary">
-            ✉️ {patient.email}
-          </Typography>
-
-          <Button sx={{ mt: 2 }} variant="outlined" onClick={() => setEditMode(true)}>
-            Editar paciente
+          <Button variant="outlined" onClick={() => setEditMode(true)}>
+            Editar
           </Button>
-        </Box>
+        </Stack>
       )}
     </Paper>
 
-    {/* NUEVA CITA */}
-    <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
-      <Typography variant="h6">
-        Nueva cita
-      </Typography>
+    {/* 🧩 GRID PRINCIPAL */}
+    <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3 }}>
 
-      <Stack spacing={2}>
-        <TextField
-          type="date"
-          value={selectedDate}
-          onChange={(e) => {
-            const date = e.target.value;
-            setSelectedDate(date);
-            fetchAvailability(date);
-          }}
-        />
-
-        <Typography variant="subtitle2">
-          Huecos disponibles
+      {/* 📅 NUEVA CITA */}
+      <Paper sx={{ p: 3, borderRadius: 3 }}>
+        <Typography variant="h6" >
+          ➕ Nueva cita
         </Typography>
-
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-          {selectedDate &&
-            generateSlots(selectedDate)
-              .filter((slot) =>
-                isSlotFree(slot, newAppointment.duration_minutes)
-              )
-              .map((slot) => (
-                <Button
-                  key={slot.toISOString()}
-                  variant={
-                    selectedSlot === slot.toISOString()
-                      ? "contained"
-                      : "outlined"
-                  }
-                  onClick={() => {
-                    setSelectedSlot(slot.toISOString());
-                    setNewAppointment({
-                      ...newAppointment,
-                      date: slot.toISOString(),
-                    });
-                  }}
-                >
-                  {slot.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Button>
-              ))}
-        </Box>
-
         <FormControl>
+  <Typography variant="subtitle2">
+    Duración
+  </Typography>
+
+  <RadioGroup
+    row
+    value={newAppointment.duration_minutes}
+    onChange={(e) =>
+      setNewAppointment({
+        ...newAppointment,
+        duration_minutes: Number(e.target.value),
+      })
+    }
+  >
+    <FormControlLabel value={30} control={<Radio />} label="30 min" />
+    <FormControlLabel value={60} control={<Radio />} label="60 min" />
+  </RadioGroup>
+</FormControl>
+
+        <Stack spacing={2}>
+          <TextField
+            type="date"
+            value={selectedDate}
+            onChange={(e) => {
+              const date = e.target.value;
+              setSelectedDate(date);
+              fetchAvailability(date);
+            }}
+          />
+
           <Typography variant="subtitle2">
-            Tipo de cita
+            Huecos disponibles
           </Typography>
 
-          <RadioGroup
-            row
-            value={newAppointment.duration_minutes}
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+            {selectedDate &&
+              generateSlots(selectedDate)
+                .filter((slot) =>
+                  isSlotFree(slot, newAppointment.duration_minutes)
+                )
+                .map((slot) => (
+                  <Button
+                    key={slot.toISOString()}
+                    variant={
+                      selectedSlot === slot.toISOString()
+                        ? "contained"
+                        : "outlined"
+                    }
+                    onClick={() => {
+                      setSelectedSlot(slot.toISOString());
+                      setNewAppointment({
+                        ...newAppointment,
+                        date: slot.toISOString(),
+                      });
+                    }}
+                  >
+                    {slot.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Button>
+                ))}
+          </Box>
+
+          {/* 💳 NUEVO BLOQUE: PAGO + PRECIO */}
+        <FormControl>
+  <Typography variant="subtitle2">
+    Tipo de cita
+  </Typography>
+
+  <RadioGroup
+    value={selectedType}
+    onChange={(e) => {
+      const typeId = e.target.value;
+      const type = appointmentTypes.find(t => t.id === typeId);
+
+      setSelectedType(typeId);
+
+      setNewAppointment({
+        ...newAppointment,
+        appointment_type_id: typeId,
+        price: type?.price ?? 0,
+        duration_minutes: type?.duration_minutes ?? 30,
+      });
+    }}
+  >
+    {appointmentTypes.map((t) => (
+      <FormControlLabel
+        key={t.id}
+        value={t.id}
+        control={<Radio />}
+        label={
+          <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+            <Typography>{t.name}</Typography>
+          </Box>
+        }
+      />
+    ))}
+  </RadioGroup>
+</FormControl>
+
+<FormGroup>
+  <FormControlLabel
+    control={
+      <Switch
+        checked={newAppointment.is_clinical}
+        onChange={(e) =>
+          setNewAppointment({
+            ...newAppointment,
+            is_clinical: e.target.checked,
+          })
+        }
+      />
+    }
+    label="Consulta clínica"
+  />
+</FormGroup>
+
+        <FormControl>
+  <Typography variant="subtitle2">
+    Método de pago
+  </Typography>
+
+  <RadioGroup
+    row
+    value={newAppointment.payment_method}
+    onChange={(e) =>
+      setNewAppointment({
+        ...newAppointment,
+        payment_method: e.target.value,
+      })
+    }
+  >
+<FormControlLabel
+  value="cash"
+  control={<Radio />}
+  label={
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <MoneyIcon fontSize="small" />
+      <Typography>Efectivo</Typography>
+    </Box>
+  }
+/>
+
+<FormControlLabel
+  value="card"
+  control={<Radio />}
+  label={
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <PaymentIcon fontSize="small" />
+      <Typography>Tarjeta</Typography>
+    </Box>
+  }
+/>
+  </RadioGroup>
+</FormControl>
+
+          <TextField
+            label="Notas"
+            value={newAppointment.notes}
             onChange={(e) =>
               setNewAppointment({
                 ...newAppointment,
-                duration_minutes: Number(e.target.value),
+                notes: e.target.value,
               })
             }
-          >
-            <FormControlLabel value={30} control={<Radio />} label="30 min" />
-            <FormControlLabel value={60} control={<Radio />} label="60 min" />
-          </RadioGroup>
-        </FormControl>
+          />
 
-        <TextField
-          label="Notas"
-          value={newAppointment.notes}
-          onChange={(e) =>
-            setNewAppointment({
-              ...newAppointment,
-              notes: e.target.value,
-            })
-          }
-        />
+          <Button variant="contained" onClick={createAppointment}>
+            Crear cita
+          </Button>
 
-        <Button variant="contained" onClick={createAppointment}>
-          Crear cita
-        </Button>
-      </Stack>
+          {errorMsg && (
+            <Typography color="error">{errorMsg}</Typography>
+          )}
+        </Stack>
+      </Paper>
 
-      {errorMsg && (
-        <Typography color="error">
-          {errorMsg}
+      {/* 📋 HISTORIAL */}
+      <Box>
+        <Typography variant="h6" >
+          📋 Historial de citas
         </Typography>
-      )}
-    </Paper>
 
-    {/* HISTORIAL CITAS */}
-    <Typography variant="h6" >
-      Historial de citas
-    </Typography>
+        <Stack spacing={2}>
+{appointments.map((a) => {
+  const statusColor =
+    a.status === "completed"
+      ? "success"
+      : a.status === "cancelled"
+      ? "error"
+      : a.status === "confirmed"
+      ? "primary"
+      : "warning";
 
-    <Stack spacing={2}>
-      {appointments.map((a) => (
-        <Paper key={a.id} sx={{ p: 2, borderRadius: 3 }}>
+  return (
+    <Paper
+      key={a.id}
+      sx={{
+        p: 0,
+        borderRadius: 3,
+        overflow: "hidden",
+        position: "relative",
+        transition: "0.2s",
+        "&:hover": {
+          transform: "translateY(-2px)",
+          boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+        },
+      }}
+    >
+      {/* barra lateral estado */}
+      <Box
+        sx={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 6,
+          bgcolor: `${statusColor}.main`,
+        }}
+      />
+
+      <Box sx={{ p: 2, pl: 3 }}>
+        {/* HEADER */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <Typography >
             📅 {new Date(a.date).toLocaleString()}
           </Typography>
 
-          <Typography color="text.secondary">
-            Estado: {a.status}
+          <Chip
+            size="small"
+            label={a.status}
+            color={statusColor as any}
+            variant="outlined"
+          />
+        </Box>
+
+        <Divider sx={{ my: 1.5 }} />
+
+        {/* BODY */}
+
+
+        <Box sx={{ mt: 1 }}>
+  {a.appointment_types && (
+    <Typography variant="body2">
+      🩺 {a.appointment_types.name}
+    </Typography>
+  )}
+
+  <Typography variant="body2">
+    ⏱ {a.duration_minutes} min
+  </Typography>
+
+  <Typography variant="body2">
+    💰 {a.price}€
+  </Typography>
+
+  <Typography variant="body2">
+    {a.payment_method === "cash"
+      ? "💵 Efectivo"
+      : "💳 Tarjeta"}
+  </Typography>
+</Box>
+
+{a.is_clinical && (
+  <Chip
+    size="small"
+    color="secondary"
+    label="Clínica"
+    sx={{ mt: 1 }}
+  />
+)}
+
+        {a.notes && (
+          <Typography sx={{ mt: 1 }}>
+            {a.notes}
           </Typography>
+        )}
 
-          <Typography sx={{ mt: 1 }}>{a.notes}</Typography>
+        {/* FOOTER ACTIONS */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            mt: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          <IconButton
+            size="small"
+            onClick={() => updateStatus(a.id, "confirmed")}
+            color="primary"
+          >
+            <CheckIcon fontSize="small" />
+          </IconButton>
 
-          <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-            <Button size="small" onClick={() => updateStatus(a.id, "confirmed")}>
-              Confirmar
-            </Button>
+          <IconButton
+            size="small"
+            onClick={() => updateStatus(a.id, "completed")}
+            color="success"
+          >
+            <DoneAllIcon fontSize="small" />
+          </IconButton>
 
-            <Button size="small" onClick={() => updateStatus(a.id, "completed")}>
-              Completar
-            </Button>
+          <IconButton
+            size="small"
+            onClick={() => updateStatus(a.id, "cancelled")}
+            color="error"
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
 
-            <Button
-              size="small"
-              color="error"
-              onClick={() => updateStatus(a.id, "cancelled")}
-            >
-              Cancelar
-            </Button>
+          <IconButton
+            size="small"
+            onClick={() => {
+              setEditingAppointment(a.id);
+              setEditForm({
+                date: a.date,
+                notes: a.notes,
+                duration_minutes: a.duration_minutes,
+              });
+            }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </Box>
 
-            <Button
-              size="small"
-              onClick={() => {
-                setEditingAppointment(a.id);
-                setEditForm({
-                  date: a.date,
-                  notes: a.notes,
-                  duration_minutes: a.duration_minutes,
-                });
-              }}
-            >
-              Editar
-            </Button>
-          </Stack>
-
-          {editingAppointment === a.id && (
-            <Paper sx={{ p: 2, mt: 2, bgcolor: "#fafafa", borderRadius: 2 }}>
+        {/* EDIT MODE (igual que el tuyo pero embebido bonito) */}
+        {editingAppointment === a.id && (
+          <Box sx={{ mt: 2 }}>
+            <Paper sx={{ p: 2, bgcolor: "#fafafa" }}>
               <Stack spacing={2}>
                 <TextField
                   type="datetime-local"
@@ -458,22 +700,19 @@ return (
                   }
                 />
 
-                <FormControl>
-                  <InputLabel>Duración</InputLabel>
-                  <Select
-                    value={editForm.duration_minutes}
-                    label="Duración"
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        duration_minutes: Number(e.target.value),
-                      })
-                    }
-                  >
-                    <MenuItem value={30}>30 min</MenuItem>
-                    <MenuItem value={60}>60 min</MenuItem>
-                  </Select>
-                </FormControl>
+                <RadioGroup
+                  row
+                  value={editForm.duration_minutes}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      duration_minutes: Number(e.target.value),
+                    })
+                  }
+                >
+                  <FormControlLabel value={30} control={<Radio />} label="30 min" />
+                  <FormControlLabel value={60} control={<Radio />} label="60 min" />
+                </RadioGroup>
 
                 <Stack direction="row" spacing={2}>
                   <Button
@@ -482,17 +721,22 @@ return (
                   >
                     Guardar
                   </Button>
-
                   <Button onClick={() => setEditingAppointment(null)}>
                     Cancelar
                   </Button>
                 </Stack>
               </Stack>
             </Paper>
-          )}
-        </Paper>
-      ))}
-    </Stack>
+          </Box>
+        )}
+      </Box>
+    </Paper>
+  );
+})}
+        </Stack>
+      </Box>
+
+    </Box>
   </Box>
 );
 }

@@ -8,6 +8,11 @@ import Appointments from "./pages/AppointmentsPage";
 import Login from "./login/Login";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import Register from "./login/Register";
+import AppointmentTypesSettings from "./pages/AppointmentTypesSettings";
+import Products from "./pages/products/Products";
+import ProductsManagement from "./pages/products/ProductsManagement";
+import Sales from "./pages/products/Sales";
+import Accounting from "./pages/products/Accounting";
 
 
 
@@ -29,6 +34,12 @@ export default function App() {
             <Route path="/patients" element={<Patients />} />
             <Route path="/patients/:id" element={<PatientDetail />} />
             <Route path="/appointments" element={<Appointments />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/products/management" element={<ProductsManagement />} />
+            <Route path="/sales" element={<Sales />} />
+              <Route path="/accounting" element={<Accounting />} />
+            <Route path="/settings/appointment-types" element={<AppointmentTypesSettings />}
+  />
 
           </Route>
         </Route>

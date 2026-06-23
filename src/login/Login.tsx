@@ -1,6 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiPublicFetch } from "../api/api";
+import { supabase } from "../lib/supabase";
+
+import {
+  Box,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Stack,
+  Link,
+  CircularProgress,
+} from "@mui/material";
+import logo from "../../public/nued.jpg";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -10,122 +23,120 @@ export default function Login() {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-  const token = localStorage.getItem("token");
-  if (token) navigate("/dashboard");
-}, []);
+useEffect(() => {
+  const checkSession = async () => {
+    const { data } = await supabase.auth.getSession();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-        const res = await apiPublicFetch("/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.message || "Error al iniciar sesión");
-      }
-
-      // guardamos token
-      localStorage.setItem("token", data.session.access_token);
-
-      // opcional: guardar user
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      // redirigir
+    if (data.session) {
       navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
+  checkSession();
+}, []);
+
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+
+    navigate("/dashboard");
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
   return (
-    <div
-      style={{
+    <Box
+      sx={{
         height: "100vh",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "#f5f5f5",
+        background: "linear-gradient(135deg, #e3f2fd, #f5f5f5)",
       }}
     >
-      <form
-        onSubmit={handleLogin}
-        style={{
-          padding: 30,
-          background: "white",
-          borderRadius: 10,
-          width: 320,
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+      <Paper
+        elevation={6}
+        sx={{
+          width: 360,
+          p: 4,
+          borderRadius: 3,
         }}
       >
-        <h2 style={{ marginBottom: 10 }}>Login</h2>
+        <form onSubmit={handleLogin}>
+          <Stack spacing={2}>
+            {/* LOGO */}
+            <Box sx={{ display: "flex", justifyContent: "center" }}>
+              <img src={logo} alt="logo" style={{ width: 70 }} />
+            </Box>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc" }}
-        />
+            <Typography variant="h5" >
+              Iniciar sesión
+            </Typography>
 
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc" }}
-        />
+            <TextField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              fullWidth
+            />
 
-        {error && (
-          <p style={{ color: "red", fontSize: 12 }}>{error}</p>
-        )}
+            <TextField
+              label="Contraseña"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              fullWidth
+            />
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: 10,
-            borderRadius: 6,
-            border: "none",
-            background: loading ? "#999" : "#2d6cdf",
-            color: "white",
-            cursor: "pointer",
-          }}
-        >
-          {loading ? "Entrando..." : "Entrar"}
-        </button>
-      </form>
+            {error && (
+              <Typography color="error" >
+                {error}
+              </Typography>
+            )}
 
-      <p
-  onClick={() => navigate("/register")}
-  style={{
-    marginTop: 10,
-    fontSize: 13,
-    color: "#2d6cdf",
-    cursor: "pointer",
-    textAlign: "center",
-  }}
->
-  ¿No tienes cuenta? Regístrate
-</p>
-    </div>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={loading}
+              fullWidth
+              sx={{
+                py: 1.2,
+                fontWeight: 600,
+              }}
+            >
+              {loading ? (
+                <CircularProgress size={22} color="inherit" />
+              ) : (
+                "Entrar"
+              )}
+            </Button>
+
+            <Typography >
+              ¿No tienes cuenta?{" "}
+              <Link
+                component="button"
+                onClick={() => navigate("/register")}
+                underline="hover"
+              >
+                Regístrate
+              </Link>
+            </Typography>
+          </Stack>
+        </form>
+      </Paper>
+    </Box>
   );
 }

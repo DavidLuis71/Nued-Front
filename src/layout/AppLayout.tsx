@@ -12,8 +12,12 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import logo from "../assets/nued.jpg";
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
+import { Collapse } from "@mui/material";
+import logo from "../../public/nued.jpg";
 import MenuIcon from "@mui/icons-material/Menu";
+import { supabase } from "../lib/supabase";
 
 const drawerWidth = 180;
 
@@ -22,18 +26,17 @@ export default function AppLayout() {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-
+const [openProducts, setOpenProducts] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleLogout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
+const handleLogout = async () => {
+  await supabase.auth.signOut();
   navigate("/login");
 };
 
   const handleNavigate = (path: string) => {
     navigate(path);
-
+ setOpenProducts(false);
     if (isMobile) {
       setMobileOpen(false);
     }
@@ -53,9 +56,48 @@ export default function AppLayout() {
         <ListItemText primary="Citas" />
       </ListItemButton>
 
-      <ListItemButton onClick={() => handleNavigate("/patients")}>
-        <ListItemText primary="Contabilidad" />
-      </ListItemButton>
+      <ListItemButton onClick={() => handleNavigate("/settings/appointment-types")}>
+      <ListItemText primary="Tipos de cita" />
+    </ListItemButton>
+
+  <ListItemButton onClick={() => setOpenProducts(!openProducts)}>
+  <ListItemText primary="📦 Productos" />
+  {openProducts ? <ExpandLess /> : <ExpandMore />}
+</ListItemButton>
+
+<Collapse in={openProducts} timeout="auto" unmountOnExit>
+  <List component="div" disablePadding>
+
+    <ListItemButton
+      sx={{ pl: 4 }}
+      onClick={() => handleNavigate("/products")}
+    >
+      <ListItemText primary="🛒 Caja (POS)" />
+    </ListItemButton>
+
+    <ListItemButton
+      sx={{ pl: 4 }}
+      onClick={() => handleNavigate("/products/management")}
+    >
+      <ListItemText primary="📋 Gestión" />
+    </ListItemButton>
+
+    <ListItemButton
+      sx={{ pl: 4 }}
+      onClick={() => handleNavigate("/sales")}
+    >
+      <ListItemText primary="🧾 Ventas" />
+    </ListItemButton>
+     <ListItemButton
+      sx={{ pl: 4 }}
+      onClick={() => handleNavigate("/accounting")}
+    >
+      <ListItemText primary="💰 Contabilidad" />
+    </ListItemButton> 
+
+  </List>
+</Collapse>
+
       <ListItemButton onClick={handleLogout}>
         <ListItemText primary="Cerrar sesión" />
         </ListItemButton>
@@ -155,7 +197,7 @@ export default function AppLayout() {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: 1.5,
           width: "100%",
         }}
       >
