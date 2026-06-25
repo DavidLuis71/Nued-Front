@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
+import { useNavigate } from "react-router-dom";
 import PaymentIcon from "@mui/icons-material/Payment";
 import MoneyIcon from "@mui/icons-material/AttachMoney";
 import EditIcon from "@mui/icons-material/Edit";
@@ -22,8 +24,12 @@ import {
   IconButton,
   Switch,
   FormGroup,
+   Select,
+   MenuItem,
+    InputLabel
 } from "@mui/material";
 import { apiFetch } from "../api/api";
+import LoadingScreen from "../loading/LoadingScreen";
 
 type Patient = {
   id: string;
@@ -31,6 +37,10 @@ type Patient = {
   last_name: string;
   phone: string;
   email: string;
+  birth_date?: string;
+  height_cm?: number;
+  weight_kg?: number;
+  gender?:string;
 };
 
 type Appointment = {
@@ -48,6 +58,13 @@ is_clinical: boolean;
   };
 };
 
+type Slot = {
+  start: string;
+  end: string;
+};
+
+
+
 export default function PatientDetail() {
   const { id } = useParams();
 
@@ -56,10 +73,12 @@ export default function PatientDetail() {
   const [editingAppointment, setEditingAppointment] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
-const [availability, setAvailability] = useState<Appointment[]>([]);
+const [availability, setAvailability] = useState<Slot[]>([]);
+const [isClosed, setIsClosed] = useState(false);
 const [selectedSlot, setSelectedSlot] = useState<string>("");
 const [appointmentTypes, setAppointmentTypes] = useState<any[]>([]);
 const [selectedType, setSelectedType] = useState<string>("");
+const navigate = useNavigate();
 
 const [editForm, setEditForm] = useState({
   date: "",
@@ -68,12 +87,16 @@ const [editForm, setEditForm] = useState({
 });
 
   const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState({
-    first_name: "",
-    last_name: "",
-    phone: "",
-    email: "",
-  });
+const [form, setForm] = useState({
+  first_name: "",
+  last_name: "",
+  phone: "",
+  email: "",
+  birth_date: "",
+  height_cm: "",
+  weight_kg: "",
+  gender:"",
+});
 
 const [newAppointment, setNewAppointment] = useState({
   date: "",
@@ -88,10 +111,11 @@ const [newAppointment, setNewAppointment] = useState({
 
 
 const fetchAvailability = async (date: string) => {
-const res = await apiFetch(`/availability?date=${date}`);
-
+  const res = await apiFetch(`/schedule/availability?date=${date}`);
   const data = await res.json();
-  setAvailability(data);
+
+  setAvailability(data.slots || []);
+  setIsClosed(data.closed);
 };
 
 const refreshData = async () => {
@@ -193,12 +217,16 @@ const fetchPatient = async () => {
   setPatient(patientData);
   setAppointments(apptData);
 
-  setForm({
-    first_name: patientData.first_name,
-    last_name: patientData.last_name,
-    phone: patientData.phone,
-    email: patientData.email,
-  });
+setForm({
+  first_name: patientData.first_name,
+  last_name: patientData.last_name,
+  phone: patientData.phone,
+  email: patientData.email,
+  birth_date: patientData.birth_date ?? "",
+  height_cm: patientData.height_cm?.toString() ?? "",
+  weight_kg: patientData.weight_kg?.toString() ?? "",
+  gender: patientData.gender ?? "", 
+});
 };
 
 
@@ -213,50 +241,31 @@ const fetchPatient = async () => {
   fetchTypes();
   }, [id]);
 
-  const isSlotFree = (slot: Date, duration: number) => {
-  const slotEnd = new Date(slot);
-  slotEnd.setMinutes(slotEnd.getMinutes() + duration);
-
-  return !availability.some((a) => {
-    const aStart = new Date(a.date);
-    const aEnd = new Date(a.date);
-    aEnd.setMinutes(aEnd.getMinutes() + a.duration_minutes);
-
-    return slot < aEnd && slotEnd > aStart;
-  });
-};
-const generateSlots = (date: string) => {
-  const slots = [];
-
-  const base = new Date(date);
-  base.setHours(8, 0, 0, 0);
-
-  const end = new Date(date);
-  end.setHours(20, 0, 0, 0);
-
-  while (base < end) {
-    slots.push(new Date(base));
-    base.setMinutes(base.getMinutes() + 30);
-  }
-
-  return slots;
-};
 
   // ✏️ update patient
-  const updatePatient = async () => {
-   await apiFetch(`/patients/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
+const updatePatient = async () => {
+  await apiFetch(`/patients/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      ...form,
+      height_cm: form.height_cm ? Number(form.height_cm) : null,
+      weight_kg: form.weight_kg ? Number(form.weight_kg) : null,
+      birth_date: form.birth_date || null,
+    }),
+  });
 
-    setEditMode(false);
+  setEditMode(false);
   await refreshData();
-  };
+};
 
-  if (!patient) return <div>Cargando...</div>;
+if (!patient) {
+  return (
+    <LoadingScreen message="Cargando paciente..." />
+  );
+}
 
 return (
   <Box sx={{ maxWidth: 1100, mx: "auto"}}>
@@ -308,6 +317,47 @@ return (
               setForm({ ...form, email: e.target.value })
             }
           />
+          <TextField
+  label="Fecha de nacimiento"
+  type="date"
+  value={form.birth_date}
+  onChange={(e) =>
+    setForm({ ...form, birth_date: e.target.value })
+  }
+/>
+
+<TextField
+  label="Altura (cm)"
+  type="number"
+  value={form.height_cm}
+  onChange={(e) =>
+    setForm({ ...form, height_cm: e.target.value })
+  }
+/>
+
+<TextField
+  label="Peso (kg)"
+  type="number"
+  value={form.weight_kg}
+  onChange={(e) =>
+    setForm({ ...form, weight_kg: e.target.value })
+  }
+/>
+<FormControl fullWidth>
+  <InputLabel>Sexo</InputLabel>
+  <Select
+    value={form.gender || ""}
+    label="Sexo"
+    onChange={(e) =>
+      setForm({ ...form, gender: e.target.value })
+    }
+  >
+    <MenuItem value="male">Hombre</MenuItem>
+    <MenuItem value="female">Mujer</MenuItem>
+    <MenuItem value="other">Otro</MenuItem>
+    <MenuItem value="unknown">No especificado</MenuItem>
+  </Select>
+</FormControl>
 
           <Stack direction="row" spacing={2}>
             <Button variant="contained" onClick={updatePatient}>
@@ -328,11 +378,31 @@ return (
             <Typography color="text.secondary">
               📞 {patient.phone} · ✉️ {patient.email}
             </Typography>
+                <Typography color="text.secondary">
+              🎂 {patient.birth_date ? new Date(patient.birth_date).toLocaleDateString() : "Sin fecha"} ·
+              📏 {patient.height_cm ?? "-"} cm ·
+              ⚖️ {patient.weight_kg ?? "-"} kg
+              🧬 {patient.gender ?? "No especificado"}
+            </Typography>
           </Box>
 
-          <Button variant="outlined" onClick={() => setEditMode(true)}>
-            Editar
-          </Button>
+         <Stack direction="row" spacing={2}>
+            <Button
+              variant="outlined"
+              onClick={() => setEditMode(true)}
+            >
+              Editar
+            </Button>
+
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={<RestaurantMenuIcon />}
+              onClick={() => navigate(`/patients/${patient.id}/diet`)}
+            >
+              Dieta
+            </Button>
+          </Stack>
         </Stack>
       )}
     </Paper>
@@ -379,36 +449,44 @@ return (
           <Typography variant="subtitle2">
             Huecos disponibles
           </Typography>
+          {isClosed && (
+  <Paper
+    sx={{
+      p: 2,
+      mt: 1,
+      bgcolor: "#fff3f3",
+      border: "1px solid #ffcccc",
+    }}
+  >
+    <Typography color="error" >
+      🚫 Este día está cerrado por vacaciones
+    </Typography>
+  </Paper>
+)}
 
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {selectedDate &&
-              generateSlots(selectedDate)
-                .filter((slot) =>
-                  isSlotFree(slot, newAppointment.duration_minutes)
-                )
-                .map((slot) => (
-                  <Button
-                    key={slot.toISOString()}
-                    variant={
-                      selectedSlot === slot.toISOString()
-                        ? "contained"
-                        : "outlined"
-                    }
-                    onClick={() => {
-                      setSelectedSlot(slot.toISOString());
-                      setNewAppointment({
-                        ...newAppointment,
-                        date: slot.toISOString(),
-                      });
-                    }}
-                  >
-                    {slot.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </Button>
-                ))}
-          </Box>
+<Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+  {availability.map((slot) => (
+    <Button
+      key={slot.start}
+      variant={
+        selectedSlot === slot.start ? "contained" : "outlined"
+      }
+      onClick={() => {
+        setSelectedSlot(slot.start);
+
+        setNewAppointment({
+          ...newAppointment,
+          date: slot.start,
+        });
+      }}
+    >
+      {new Date(slot.start).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}
+    </Button>
+  ))}
+</Box>
 
           {/* 💳 NUEVO BLOQUE: PAGO + PRECIO */}
         <FormControl>

@@ -45,6 +45,7 @@ export default function ProductsManagement() {
   const [products, setProducts] = useState<Product[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  
 
   const [form, setForm] = useState(emptyForm);
 

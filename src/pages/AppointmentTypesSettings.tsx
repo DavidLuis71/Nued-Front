@@ -242,9 +242,13 @@ export default function AppointmentTypesSettings() {
                  VIEW MODE
               ========================= */
               <Box>
-                <Stack
-                
-                >
+           <Stack
+                direction="row"
+                sx={{
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
                   <Box>
                     <Typography variant="h6">
                       {t.name}

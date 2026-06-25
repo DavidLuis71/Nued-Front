@@ -13,6 +13,10 @@ import Products from "./pages/products/Products";
 import ProductsManagement from "./pages/products/ProductsManagement";
 import Sales from "./pages/products/Sales";
 import Accounting from "./pages/products/Accounting";
+import WorkScheduleSettings from "./pages/WorkScheduleSettings";
+import FoodProductsManagement from "./FoodDateTable/FoodProductsManagement";
+import PatientDietCreator from "./FoodDateTable/PatientNutritionCalculation";
+import PatientDietGenerator from "./FoodDateTable/PatientDietGenerator";
 
 
 
@@ -31,15 +35,19 @@ export default function App() {
             
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/foodDataTable" element={<FoodProductsManagement />} />
             <Route path="/patients" element={<Patients />} />
             <Route path="/patients/:id" element={<PatientDetail />} />
             <Route path="/appointments" element={<Appointments />} />
+            <Route path="/settings/work-schedule" element={<WorkScheduleSettings  />} />
             <Route path="/products" element={<Products />} />
             <Route path="/products/management" element={<ProductsManagement />} />
             <Route path="/sales" element={<Sales />} />
               <Route path="/accounting" element={<Accounting />} />
-            <Route path="/settings/appointment-types" element={<AppointmentTypesSettings />}
-  />
+            <Route path="/settings/appointment-types" element={<AppointmentTypesSettings />}/>
+            <Route path="/patients/:id/diet" element={<PatientDietCreator />}/>
+            <Route path="/patients/:id/diet/generate" element={<PatientDietGenerator />}
+          />
 
           </Route>
         </Route>

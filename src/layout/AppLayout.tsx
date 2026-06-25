@@ -17,9 +17,25 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import { Collapse } from "@mui/material";
 import logo from "../../public/nued.jpg";
 import MenuIcon from "@mui/icons-material/Menu";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import PeopleIcon from "@mui/icons-material/People";
+import EventIcon from "@mui/icons-material/Event";
+import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
+import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import LogoutIcon from "@mui/icons-material/Logout";
+import MonitorWeightIcon from "@mui/icons-material/MonitorWeight";
+import { ListItemIcon } from "@mui/material";
 import { supabase } from "../lib/supabase";
 
 const drawerWidth = 180;
+const menuIconStyle = {
+  color: "primary.main",
+  //  color: "secondary.main",
+  minWidth: 40,
+};
 
 export default function AppLayout() {
   const navigate = useNavigate();
@@ -27,6 +43,7 @@ export default function AppLayout() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 const [openProducts, setOpenProducts] = useState(false);
+const [openAppointments, setOpenAppointments] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
 const handleLogout = async () => {
@@ -45,61 +62,159 @@ const handleLogout = async () => {
   const menuContent = (
     <List>
       <ListItemButton onClick={() => handleNavigate("/dashboard")}>
+        <ListItemIcon
+         sx={menuIconStyle}
+        >
+          <DashboardIcon />
+        </ListItemIcon>
+
         <ListItemText primary="Dashboard" />
       </ListItemButton>
 
-      <ListItemButton onClick={() => handleNavigate("/patients")}>
-        <ListItemText primary="Pacientes" />
+      <ListItemButton onClick={() => handleNavigate("/foodDataTable")}>
+        <ListItemIcon
+         sx={menuIconStyle}
+        >
+          <MonitorWeightIcon />
+        </ListItemIcon>
+
+        <ListItemText primary="Comida" />
       </ListItemButton>
 
-      <ListItemButton onClick={() => handleNavigate("/appointments")}>
-        <ListItemText primary="Citas" />
-      </ListItemButton>
+        <ListItemButton onClick={() => handleNavigate("/patients")}>
+          <ListItemIcon
+             sx={menuIconStyle}
+          >
+            <PeopleIcon />
+          </ListItemIcon>
 
-      <ListItemButton onClick={() => handleNavigate("/settings/appointment-types")}>
-      <ListItemText primary="Tipos de cita" />
+          <ListItemText primary="Pacientes" />
+        </ListItemButton>
+
+    <ListItemButton onClick={() => setOpenAppointments(!openAppointments)}>
+  <ListItemIcon sx={menuIconStyle}>
+    <EventIcon />
+  </ListItemIcon>
+
+  <ListItemText primary="Citas" />
+
+  {openAppointments ? <ExpandLess /> : <ExpandMore />}
+</ListItemButton>
+
+<Collapse in={openAppointments} timeout="auto" unmountOnExit>
+  <List component="div" disablePadding>
+
+    
+<ListItemButton
+  sx={{ pl: 4 }}
+  onClick={() => handleNavigate("/settings/work-schedule")}
+>
+  <ListItemIcon sx={menuIconStyle}>
+    <EventIcon />
+  </ListItemIcon>
+
+  <ListItemText primary="Horarios" />
+</ListItemButton>
+
+    <ListItemButton
+      sx={{ pl: 4 }}
+      onClick={() => handleNavigate("/appointments")}
+    >
+      <ListItemIcon sx={menuIconStyle}>
+        <EventIcon />
+      </ListItemIcon>
+
+      <ListItemText primary="Calendario" />
     </ListItemButton>
 
-  <ListItemButton onClick={() => setOpenProducts(!openProducts)}>
-  <ListItemText primary="📦 Productos" />
-  {openProducts ? <ExpandLess /> : <ExpandMore />}
-</ListItemButton>
+    <ListItemButton
+      sx={{ pl: 4 }}
+      onClick={() => handleNavigate("/settings/appointment-types")}
+    >
+      <ListItemIcon sx={menuIconStyle}>
+        <MedicalServicesIcon />
+      </ListItemIcon>
+
+      <ListItemText primary="Tipos" />
+    </ListItemButton>
+
+  </List>
+</Collapse>
+   
+        <ListItemButton onClick={() => handleNavigate("/accounting")}>
+          <ListItemIcon
+             sx={menuIconStyle}
+          >
+            <PaymentsIcon />
+          </ListItemIcon>
+
+          <ListItemText primary="Contabilidad" />
+        </ListItemButton>
+
+          <ListItemButton 
+                    onClick={() => setOpenProducts(!openProducts)}>
+            <ListItemIcon sx={menuIconStyle}>
+              <Inventory2Icon />
+            </ListItemIcon>
+
+            <ListItemText primary="Productos" />
+
+            {openProducts ? <ExpandLess /> : <ExpandMore />}
+          </ListItemButton>
 
 <Collapse in={openProducts} timeout="auto" unmountOnExit>
   <List component="div" disablePadding>
 
-    <ListItemButton
-      sx={{ pl: 4 }}
-      onClick={() => handleNavigate("/products")}
-    >
-      <ListItemText primary="🛒 Caja (POS)" />
-    </ListItemButton>
+      <ListItemButton
+           sx={{ pl: 4 }}
+        onClick={() => handleNavigate("/products")}
+      >
+        <ListItemIcon    sx={menuIconStyle}>
+          <PointOfSaleIcon />
+        </ListItemIcon>
 
-    <ListItemButton
-      sx={{ pl: 4 }}
-      onClick={() => handleNavigate("/products/management")}
-    >
-      <ListItemText primary="📋 Gestión" />
-    </ListItemButton>
+        <ListItemText primary="Caja" />
+      </ListItemButton>
 
-    <ListItemButton
-      sx={{ pl: 4 }}
-      onClick={() => handleNavigate("/sales")}
-    >
-      <ListItemText primary="🧾 Ventas" />
-    </ListItemButton>
-     <ListItemButton
-      sx={{ pl: 4 }}
-      onClick={() => handleNavigate("/accounting")}
-    >
-      <ListItemText primary="💰 Contabilidad" />
-    </ListItemButton> 
+            <ListItemButton
+            sx={{ pl: 4 }}
+            onClick={() => handleNavigate("/products/management")}
+          >
+            <ListItemIcon
+             sx={menuIconStyle}
+            >
+              <Inventory2Icon />
+            </ListItemIcon>
 
-  </List>
+            <ListItemText primary="Gestión" />
+          </ListItemButton>
+
+            <ListItemButton
+            sx={{ pl: 4 }}
+            onClick={() => handleNavigate("/sales")}
+          >
+            <ListItemIcon
+              sx={menuIconStyle}
+            >
+              <ReceiptLongIcon />
+            </ListItemIcon>
+
+            <ListItemText primary="Ventas" />
+          </ListItemButton>
+    </List>
 </Collapse>
 
-      <ListItemButton onClick={handleLogout}>
-        <ListItemText primary="Cerrar sesión" />
+            <ListItemButton onClick={handleLogout}>
+          <ListItemIcon
+            sx={{
+              color: "error.main",
+              minWidth: 40,
+            }}
+          >
+            <LogoutIcon />
+          </ListItemIcon>
+
+          <ListItemText primary="Cerrar sesión" />
         </ListItemButton>
     </List>
   );
