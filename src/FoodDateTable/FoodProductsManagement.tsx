@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  MenuItem,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -60,6 +61,8 @@ const nutritionFields: Record<string, string> = {
 export default function FoodProductsManagement() {
   const [products, setProducts] = useState<FoodProduct[]>([]);
   const [filter, setFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+const [groupFilter, setGroupFilter] = useState("");
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<FoodProduct | null>(null);
@@ -86,6 +89,9 @@ export default function FoodProductsManagement() {
     unit: "g",
   });
 
+
+  const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+const groups = Array.from(new Set(products.map(p => p.food_group).filter(Boolean)));
   /* =========================
      LOAD
   ========================= */
@@ -247,53 +253,121 @@ export default function FoodProductsManagement() {
 const filtered = products.filter((p) => {
   const q = filter.toLowerCase();
 
-  return (
+  const matchesText =
     p.name.toLowerCase().includes(q) ||
     (p.category || "").toLowerCase().includes(q) ||
-    (p.food_group || "").toLowerCase().includes(q)
-  );
+    (p.food_group || "").toLowerCase().includes(q);
+
+  const matchesCategory =
+    categoryFilter ? p.category === categoryFilter : true;
+
+  const matchesGroup =
+    groupFilter ? p.food_group === groupFilter : true;
+
+  return matchesText && matchesCategory && matchesGroup;
 });
 
   return (
     <Box>
       <Typography variant="h5">🍎 Gestión de alimentos</Typography>
 
-      <Stack direction="row" spacing={2} sx={{ my: 2 }}>
-        <TextField
-          label="Buscar producto"
-          fullWidth
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
+<Stack
+  direction="row"
+  spacing={2}
+  sx={{
+    my: 2,
+    flexWrap: "wrap",
+    alignItems: "center",
+  }}
+>
+  <TextField
+    label="Buscar producto"
+    fullWidth
+    value={filter}
+    onChange={(e) => setFilter(e.target.value)}
+     sx={{ minWidth: 180, flex: 2 }}
+  />
 
-        <Button
-          variant="contained"
-          onClick={() => {
-            setEditing(null);
-            setForm({
-              name: "",
-              category: "",
-              barcode: "",
-              food_group: "",
-              kcal: 0,
-              carbs: 0,
-              sugars: 0,
-              protein: 0,
-              fat: 0,
-              sat_fat: 0,
-              mono_fat: 0,
-              poly_fat: 0,
-              fiber: 0,
-              sodium: 0,
-              grams: 100,
-              unit: "g",
-            });
-            setOpen(true);
-          }}
-        >
-          Nuevo
-        </Button>
-      </Stack>
+ <TextField
+  select
+  label="Categoría"
+  value={categoryFilter}
+  onChange={(e) => setCategoryFilter(e.target.value)}
+   sx={{ minWidth: 180, flex: 1 }}
+>
+  <MenuItem value="">Todas</MenuItem>
+
+  {categories.map((c) => (
+    <MenuItem key={c} value={c}>
+      {c}
+    </MenuItem>
+  ))}
+</TextField>
+
+ <TextField
+  select
+  label="Grupo"
+  value={groupFilter}
+  onChange={(e) => setGroupFilter(e.target.value)}
+  sx={{ minWidth: 180, flex: 1 }}
+>
+  <MenuItem value="">Todos</MenuItem>
+
+  {groups.map((g) => (
+    <MenuItem key={g} value={g}>
+      {g}
+    </MenuItem>
+  ))}
+</TextField>
+
+  <Button
+    variant="outlined"
+    onClick={() => {
+      setFilter("");
+      setCategoryFilter("");
+      setGroupFilter("");
+    }}
+    sx={{
+    flex: { xs: "1 1 100%", sm: "0 0 auto" },
+    minWidth: 120,
+  }}
+  >
+    Reset
+  </Button>
+
+  <Button
+    variant="contained"
+     sx={{
+    flex: { xs: "1 1 100%", sm: "0 0 auto" },
+    minWidth: 140,
+    height: 56,
+  }}
+    onClick={() => {
+      setEditing(null);
+      setForm({
+        name: "",
+        category: "",
+        barcode: "",
+        food_group: "",
+        kcal: 0,
+        carbs: 0,
+        sugars: 0,
+        protein: 0,
+        fat: 0,
+        sat_fat: 0,
+        mono_fat: 0,
+        poly_fat: 0,
+        fiber: 0,
+        sodium: 0,
+        grams: 100,
+        unit: "g",
+      });
+      setOpen(true);
+    }}
+  >
+    Nuevo
+  </Button>
+</Stack>
 
       {/* LISTA */}
       <Stack spacing={1}>

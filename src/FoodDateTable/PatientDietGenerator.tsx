@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import jsPDF from "jspdf";
 import {
   Box,
   Paper,
@@ -11,12 +12,15 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import { apiFetch } from "../api/api";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate, useParams } from "react-router-dom";
 import DeleteIcon from '@mui/icons-material/Delete';
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
+import { getCircularImage } from "../helpers/utils";
 
 
 /* ---------------- TYPES ---------------- */
@@ -95,6 +99,7 @@ export default function DietCreator() {
   const [activeDay, setActiveDay] = useState(0);
 
   const [target, setTarget] = useState<any>(null);
+const [patient, setPatient] = useState<any>(null);
   const [selectedMeal, setSelectedMeal] = useState<string>("desayuno");
   const [modalOpen, setModalOpen] = useState(false);
 const [pendingFood, setPendingFood] = useState<Food | null>(null);
@@ -102,7 +107,16 @@ const [pendingMeal, setPendingMeal] = useState<string>("desayuno");
 const [pendingGrams, setPendingGrams] = useState<number>(100);
 const [saving, setSaving] = useState(false);
 
-
+const [shoppingOpen, setShoppingOpen] = useState(false);
+const [snackbar, setSnackbar] = useState<{
+  open: boolean;
+  message: string;
+  severity: "success" | "error";
+}>({
+  open: false,
+  message: "",
+  severity: "success",
+});
 
   const [plan, setPlan] = useState<DayPlan[]>(
     Array.from({ length: 7 }, (_, i) => ({
@@ -115,13 +129,199 @@ const [saving, setSaving] = useState(false);
   );
 
 
-  const handleSavePlan = async () => {
+  const pdfRef = useRef<HTMLDivElement>(null);
+
+//   const exportToPDF = async () => {
+//   if (!pdfRef.current) return;
+
+//   const canvas = await html2canvas(pdfRef.current, {
+//     scale: 2,
+//     useCORS: true,
+//   });
+
+//   const imgData = canvas.toDataURL("image/png");
+
+//   const pdf = new jsPDF("p", "mm", "a4");
+
+//   const pageWidth = pdf.internal.pageSize.getWidth();
+//   const pageHeight = pdf.internal.pageSize.getHeight();
+
+//   const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+//   // 🧠 HEADER
+//   const logo = "/nued.jpg";
+
+//   pdf.addImage(logo, "JPG", 10, 8, 20, 20);
+
+//   pdf.setFontSize(18);
+//   pdf.text("Lista de la compra", 40, 20);
+
+//   // línea separadora
+//   pdf.setLineWidth(0.5);
+//   pdf.line(10, 32, pageWidth - 10, 32);
+
+//   // contenido
+//   let y = 40;
+
+//   if (imgHeight < pageHeight) {
+//     pdf.addImage(imgData, "PNG", 10, y, pageWidth - 20, imgHeight);
+//   } else {
+//     let heightLeft = imgHeight;
+//     let position = y;
+
+//     pdf.addImage(imgData, "PNG", 10, position, pageWidth - 20, imgHeight);
+
+//     while (heightLeft > 0) {
+//       position -= pageHeight;
+//       pdf.addPage();
+//       pdf.addImage(imgData, "PNG", 10, position, pageWidth - 20, imgHeight);
+//       heightLeft -= pageHeight;
+//     }
+//   }
+
+//   pdf.save("lista-compra.pdf");
+// };
+const exportToPDF = async () => {
+  const pdf = new jsPDF("p", "mm", "a4");
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+
+  // 🔵 COLORES EMPRESA (RGB desde tus theme rgba)
+const primary: [number, number, number] = [67, 88, 143];
+const secondary: [number, number, number] = [99, 187, 188];
+
+  // 🖼️ LOGO (public)
+  const logo = "/nued.jpg";
+ const circularLogo = await getCircularImage(logo, 80);
+  // =========================
+  // HEADER BONITO
+  // =========================
+
+  // barra superior
+  pdf.setFillColor(...primary);
+  pdf.rect(0, 0, pageWidth, 30, "F");
+
+  // logo
+  pdf.addImage(circularLogo, "JPG", 10, 6, 18, 18);
+
+  // título
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(16);
+ const patientName = patient
+  ? `${patient.first_name ?? ""} ${patient.last_name ?? ""}`.trim()
+  : "Paciente";
+
+pdf.text(`Lista de la compra - ${patientName}`, 32, 18);
+
+  // subtítulo opcional
+  pdf.setFontSize(10);
+  pdf.setFont("helvetica", "normal");
+  pdf.text("@nued.nutricion", 32, 24);
+
+  // línea inferior decorativa
+  pdf.setDrawColor(...secondary);
+  pdf.setLineWidth(1);
+  pdf.line(0, 30, pageWidth, 30);
+
+  // reset estilos
+  pdf.setTextColor(0, 0, 0);
+
+  // =========================
+  // CONTENIDO
+  // =========================
+
+  let y = 40;
+
+  shoppingListGrouped.forEach((group) => {
+    // salto de página
+    if (y > 270) {
+      pdf.addPage();
+      y = 20;
+    }
+
+    // título grupo
+    pdf.setFontSize(12);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(...primary);
+    pdf.text(group.group, 10, y);
+
+    y += 6;
+
+    pdf.setFontSize(9);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(0, 0, 0);
+
+    group.items.forEach((item) => {
+      if (y > 280) {
+        pdf.addPage();
+        y = 20;
+      }
+
+      pdf.text(
+        `• ${item.food.name} (${Math.round(item.grams)} g)`,
+        12,
+        y
+      );
+
+      y += 5;
+    });
+
+    y += 4;
+  });
+const safeName = (patientName || "paciente")
+  .toLowerCase()
+  .trim()
+  .replace(/\s+/g, "-")
+  .replace(/[^a-z0-9\-]/g, "");
+
+
+  pdf.save(`lista-compra-${safeName}.pdf`);
+};
+
+  useEffect(() => {
+  const fetchPlan = async () => {
+    if (!patientId) return;
+
+    try {
+      const res = await apiFetch(`/nutrition/diet/${patientId}`);
+      const data = await res.json();
+
+      if (data?.plan) {
+        setPlan(data.plan); 
+      }
+    } catch (err) {
+      console.error("Error obteniendo dieta:", err);
+    }
+  };
+
+  fetchPlan();
+}, [patientId]);
+
+
+useEffect(() => {
+  const fetchPatient = async () => {
+    if (!patientId) return;
+
+    try {
+      const res = await apiFetch(`/patients/${patientId}`);
+      const data = await res.json();
+      setPatient(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchPatient();
+}, [patientId]);
+
+const handleSavePlan = async () => {
   if (!patientId) return;
 
   try {
     setSaving(true);
 
-    const res = await apiFetch("/nutrition/save-plan", {
+    const res = await apiFetch("/nutrition/save-diet", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -136,16 +336,25 @@ const [saving, setSaving] = useState(false);
       throw new Error("Error guardando el plan");
     }
 
-    const data = await res.json();
-    console.log("Plan guardado:", data);
+    await res.json();
 
-  } catch (err) {
-    console.error(err);
+    setSnackbar({
+      open: true,
+      message: "Plan guardado correctamente",
+      severity: "success",
+    });
+
+  } catch (err: any) {
+    setSnackbar({
+      open: true,
+      message: err.message || "Error guardando el plan",
+      severity: "error",
+    });
+
   } finally {
     setSaving(false);
   }
 };
-
   /* ---------------- LOAD PLAN ---------------- */
 
   useEffect(() => {
@@ -203,6 +412,54 @@ const categories = useMemo(() => {
 }, [foods]);
 
   const getNutrition = (food: Food) => food.food_nutrition?.[0];
+
+
+const shoppingListGrouped = useMemo(() => {
+  const map = new Map<
+    string,
+    {
+      food: Food;
+      grams: number;
+    }
+  >();
+
+  plan.forEach((day) => {
+    day.meals.forEach((meal) => {
+      meal.items.forEach((item) => {
+        const key = item.food.id;
+
+        if (!map.has(key)) {
+          map.set(key, {
+            food: item.food,
+            grams: 0,
+          });
+        }
+
+        map.get(key)!.grams += item.grams;
+      });
+    });
+  });
+
+  // ahora agrupamos por food_group
+  const groupMap = new Map<
+    string,
+    { group: string; items: { food: Food; grams: number }[] }
+  >();
+
+  map.forEach((value) => {
+    const group = value.food.food_group ?? "Sin grupo";
+
+    if (!groupMap.has(group)) {
+      groupMap.set(group, { group, items: [] });
+    }
+
+    groupMap.get(group)!.items.push(value);
+  });
+
+  return Array.from(groupMap.values()).sort((a, b) =>
+    a.group.localeCompare(b.group)
+  );
+}, [plan]);
 
   /* ---------------- ADD FOOD ---------------- */
 
@@ -286,10 +543,17 @@ const addFood = () => {
   /* ---------------- UI ---------------- */
 
   return (
-    <Box sx={{ display: "flex", gap: 2, p: 2 }}>
+    <Box
+        sx={{
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            gap: 2,
+            p: { xs: 1, md: 2 },
+        }}
+        >
 
       {/* LEFT */}
-      <Box sx={{ width: "25%" }}>
+      <Box sx={{ width: { xs: "100%", md: "24%" } }}>
         <Box sx={{ mb: 2 }}>
 
                  <Button
@@ -454,7 +718,7 @@ const addFood = () => {
       </Box>
 
       {/* CENTER */}
-      <Box sx={{ width: "50%" }}>
+      <Box sx={{ width: { xs: "100%", md: "51%" } }}>
         <Typography variant="h6">Semana</Typography>
 
         <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
@@ -632,9 +896,9 @@ const addFood = () => {
       {/* RIGHT */}
       <Box
         sx={{
-            width: "25%",
+            width: { xs: "100%", md: "25%" },
             display: "flex",
-            flexDirection: "column",
+            flexDirection: { xs: "column", md: "column" },
             gap: 2,
         }}
         >
@@ -645,6 +909,14 @@ const addFood = () => {
   onClick={handleSavePlan}
 >
   {saving ? "Guardando..." : "Guardar plan"}
+</Button>
+
+<Button
+  variant="outlined"
+  color="primary"
+  onClick={() => setShoppingOpen(true)}
+>
+  🛒 Lista de la compra
 </Button>
        <Paper
             elevation={2}
@@ -838,6 +1110,136 @@ const addFood = () => {
     </Button>
   </DialogActions>
 </Dialog>
+<Dialog
+  open={shoppingOpen}
+  onClose={() => setShoppingOpen(false)}
+  fullWidth
+  maxWidth="sm"
+>
+  <DialogTitle>🛒 Lista de la compra</DialogTitle>
+
+  <DialogContent>
+      <div ref={pdfRef}>
+{shoppingListGrouped.length === 0 ? (
+  <Typography>No hay alimentos en el plan</Typography>
+) : (
+  shoppingListGrouped.map((group) => (
+    <Paper
+      key={group.group}
+      sx={{
+        mb: 2,
+        p: 2,
+        borderRadius: 3,
+        border: "1px solid",
+        borderColor: "divider",
+        background: "#fafafa",
+      }}
+    >
+      {/* HEADER GRUPO */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 1.5,
+        }}
+      >
+        <Typography
+          variant="subtitle1"
+          sx={{
+            fontWeight: 800,
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
+          }}
+        >
+          {group.group}
+        </Typography>
+
+        <Chip
+          size="small"
+          label={`${group.items.length} productos`}
+          sx={{
+            fontWeight: 600,
+          }}
+        />
+      </Box>
+
+      {/* ITEMS */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        {group.items.map((item) => (
+          <Box
+            key={item.food.id}
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              p: 1.2,
+              borderRadius: 2,
+              background: "white",
+              border: "1px solid #eee",
+              transition: "0.2s",
+              "&:hover": {
+                boxShadow: 1,
+                transform: "translateY(-1px)",
+              },
+            }}
+          >
+            {/* LEFT */}
+            <Box>
+              <Typography sx={{ fontWeight: 600 }}>
+                {item.food.name}
+              </Typography>
+
+              <Typography variant="caption" color="text.secondary">
+                {item.food.category ?? "Sin categoría"}
+              </Typography>
+            </Box>
+
+            {/* RIGHT */}
+            <Chip
+              label={`${item.grams.toFixed(0)} g`}
+              color="primary"
+              size="small"
+              sx={{ fontWeight: 600 }}
+            />
+          </Box>
+        ))}
+      </Box>
+    </Paper>
+  ))
+)}
+</div>
+  </DialogContent>
+
+  <DialogActions>
+    <Button onClick={() => setShoppingOpen(false)}>
+      Cerrar
+    </Button>
+    <Button onClick={exportToPDF} variant="contained">
+        📄 Exportar PDF
+        </Button>
+  </DialogActions>
+</Dialog>
+<Snackbar
+  open={snackbar.open}
+  autoHideDuration={5000}
+  onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+    anchorOrigin={{ vertical: "top", horizontal: "center" }}
+>
+  <Alert
+    severity={snackbar.severity}
+    onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+    variant="filled"
+     sx={{
+      fontSize: "1rem",
+      py: 1.5,
+      px: 2,
+      minWidth: 300,
+    }}
+  >
+    {snackbar.message}
+  </Alert>
+</Snackbar>
     </Box>
   );
 }

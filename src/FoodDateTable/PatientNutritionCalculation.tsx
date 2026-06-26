@@ -409,12 +409,12 @@ const saveCalculation = async () => {
     Datos del paciente
   </Typography>
 
-  <Grid container spacing={2}>
+  <Grid container spacing={1}>
     <Grid size={{ xs: 6 }}>
       <Paper
         elevation={0}
         sx={{
-          p: 2,
+          p: 1,
           borderRadius: 3,
           bgcolor: "grey.50",
         }}
@@ -433,7 +433,7 @@ const saveCalculation = async () => {
       <Paper
         elevation={0}
         sx={{
-          p: 2,
+          p: 1,
           borderRadius: 3,
           bgcolor: "grey.50",
         }}
@@ -454,7 +454,7 @@ const saveCalculation = async () => {
       <Paper
         elevation={0}
         sx={{
-          p: 2,
+          p: 1,
           borderRadius: 3,
           bgcolor: "primary.50",
         }}
@@ -479,7 +479,7 @@ const saveCalculation = async () => {
       <Paper
         elevation={0}
         sx={{
-          p: 2,
+          p: 1,
           borderRadius: 3,
           bgcolor: "primary.50",
         }}
@@ -501,35 +501,40 @@ const saveCalculation = async () => {
     </Grid>
   </Grid>
 
-  <Box sx={{ mt: 2 }}>
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2,
-        borderRadius: 3,
-        bgcolor: "info.50",
-      }}
-    >
-      <Typography variant="body2">
+<Box sx={{ mt: 2 }}>
+  <Paper
+    elevation={0}
+    sx={{
+      p: 1.5,
+      borderRadius: 3,
+      bgcolor: "info.50",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 2,
+    }}
+  >
+    {/* Peso ideal */}
+    <Box>
+      <Typography variant="caption" color="text.secondary">
         Peso ideal
       </Typography>
-
       <Typography variant="h6">
         {idealWeight.toFixed(2)} kg
       </Typography>
+    </Box>
 
-      <Typography
-        variant="body2"
-        sx={{ mt: 1 }}
-      >
+    {/* Peso ajustado */}
+    <Box sx={{ textAlign: "right" }}>
+      <Typography variant="caption" color="text.secondary">
         Peso ajustado
       </Typography>
-
       <Typography variant="h6">
-        {adjustedWeight.toFixed(4)} kg
+        {adjustedWeight.toFixed(2)} kg
       </Typography>
-    </Paper>
-  </Box>
+    </Box>
+  </Paper>
+</Box>
 </Paper>
         </Grid>
 

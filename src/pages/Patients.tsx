@@ -116,16 +116,21 @@ const createPatient = async () => {
   );
 
   return (
-    <Box>
+    <Box
+     sx={{
+      width: "100%",
+      maxWidth: "100%",
+      overflowX: "hidden",
+    }}>
       {/* HEADER */}
     <Box
-  sx={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    mb: 3,
-  }}
->
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
   <Box>
     <Typography variant="h4" >
       Pacientes
@@ -162,6 +167,7 @@ const createPatient = async () => {
                 overflow: "hidden",
                 border: "1px solid rgba(0,0,0,0.06)",
                 boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+                overflowX: "auto",
             }}
             >
         <Table>

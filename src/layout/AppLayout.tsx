@@ -234,7 +234,7 @@ const handleLogout = async () => {
             <IconButton
               color="inherit"
               edge="start"
-              onClick={() => setMobileOpen(true)}
+              onClick={() => setMobileOpen((prev) => !prev)}
               sx={{ mr: 2 }}
             >
               <MenuIcon />
