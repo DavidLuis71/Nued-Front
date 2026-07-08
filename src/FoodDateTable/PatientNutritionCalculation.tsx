@@ -67,6 +67,8 @@ export default function PatientNutritionCalculation() {
   const [get, setGet] = useState<number | null>(null);
 
   
+
+  
 const navigate = useNavigate();
 
 
@@ -160,59 +162,62 @@ const macros = useMemo(() => {
     );
   }, [patient, idealWeight]);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
+const fetchData = async () => {
+  try {
+    setLoading(true);
 
-      const [
-        patientRes,
-        formulasRes,
-        activitiesRes,
-      ] = await Promise.all([
-        apiFetch(`/patients/${id}`),
-        apiFetch("/nutrition/formulas"),
-        apiFetch("/nutrition/activity-factors"),
-      ]);
+    const [
+      calcRes,
+      patientRes,
+      formulasRes,
+      activitiesRes,
+    ] = await Promise.all([
+      apiFetch(`/nutrition/last-calculation/${id}`),
+      apiFetch(`/patients/${id}`),
+      apiFetch("/nutrition/formulas"),
+      apiFetch("/nutrition/activity-factors"),
+    ]);
 
-      const patientData =
-        await patientRes.json();
+    const calcData = await calcRes.json();
+    const patientData = await patientRes.json();
+    const formulasData = await formulasRes.json();
+    const activitiesData = await activitiesRes.json();
 
-      const formulasData =
-        await formulasRes.json();
+    setPatient(patientData);
+    setActivities(activitiesData);
 
-      const activitiesData =
-        await activitiesRes.json();
+    const filteredFormulas =
+      patientData.gender
+        ? formulasData.filter(
+            (f: NutritionFormula) =>
+              f.gender === patientData.gender
+          )
+        : formulasData;
 
-      setPatient(patientData);
-      setActivities(activitiesData);
+    setFormulas(filteredFormulas);
 
-      const filteredFormulas =
-        patientData.gender
-          ? formulasData.filter(
-              (f: NutritionFormula) =>
-                f.gender === patientData.gender
-            )
-          : formulasData;
-
-      setFormulas(filteredFormulas);
-
+    // 🔥 AQUÍ está la clave
+    if (calcData) {
+      setSelectedFormula(calcData.formula_id);
+      setSelectedActivity(calcData.activity_factor_id);
+      setGer(calcData.ger);
+      setGet(calcData.get);
+    } else {
+      // fallback SOLO si no hay datos
       if (filteredFormulas.length > 0) {
-        setSelectedFormula(
-          filteredFormulas[0].id
-        );
+        setSelectedFormula(filteredFormulas[0].id);
       }
 
       if (activitiesData.length > 0) {
-        setSelectedActivity(
-          activitiesData[0].id
-        );
+        setSelectedActivity(activitiesData[0].id);
       }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const calculateNutrition = async () => {
     if (
@@ -275,6 +280,11 @@ const macros = useMemo(() => {
   ]);
 
 
+  const handleGoToDiet = async () => {
+  await saveCalculation();
+  navigate(`/patients/${patient?.id}/diet/generate`);
+};
+
 const saveCalculation = async () => {
   if (!patient || !ger || !get || !selectedFormula || !selectedActivity) return;
 
@@ -325,11 +335,11 @@ const saveCalculation = async () => {
         fat_kcal: macros.fat_kcal,
       }),
     });
-
     alert("Cálculo y plan guardados correctamente");
 
   } catch (err) {
     console.error(err);
+     return false;
   }
 };
 
@@ -409,97 +419,57 @@ const saveCalculation = async () => {
     Datos del paciente
   </Typography>
 
-  <Grid container spacing={1}>
-    <Grid size={{ xs: 6 }}>
+<Grid container spacing={1}>
+  {[
+    {
+      label: "Edad",
+      value: age,
+      color: "grey.50",
+    },
+    {
+      label: "Sexo",
+      value: patient?.gender === "male" ? "♂" : "♀",
+      color: "grey.50",
+    },
+    {
+      label: "Peso",
+      value: `${patient?.weight_kg} kg`,
+      color: "primary.50",
+    },
+    {
+      label: "Altura",
+      value: `${patient?.height_cm} cm`,
+      color: "primary.50",
+    },
+  ].map((item) => (
+    <Grid
+      key={item.label}
+      size={{ xs: 6, md: 3 }}
+    >
       <Paper
         elevation={0}
         sx={{
           p: 1,
           borderRadius: 3,
-          bgcolor: "grey.50",
+          bgcolor: item.color,
+          textAlign: "center",
+          height: "100%",
         }}
       >
-        <Typography variant="caption">
-          Edad
+        <Typography
+          variant="caption"
+          color="text.secondary"
+        >
+          {item.label}
         </Typography>
 
-        <Typography variant="h5">
-          {age}
+        <Typography variant="h6">
+          {item.value}
         </Typography>
       </Paper>
     </Grid>
-
-    <Grid size={{ xs: 6 }}>
-      <Paper
-        elevation={0}
-        sx={{
-          p: 1,
-          borderRadius: 3,
-          bgcolor: "grey.50",
-        }}
-      >
-        <Typography variant="caption">
-          Sexo
-        </Typography>
-
-        <Typography variant="h5">
-          {patient?.gender === "male"
-            ? "♂"
-            : "♀"}
-        </Typography>
-      </Paper>
-    </Grid>
-
-    <Grid size={{ xs: 6 }}>
-      <Paper
-        elevation={0}
-        sx={{
-          p: 1,
-          borderRadius: 3,
-          bgcolor: "primary.50",
-        }}
-      >
-        <Typography variant="caption">
-          Peso
-        </Typography>
-
-        <Typography variant="h5">
-          {patient?.weight_kg}
-          <Typography
-            component="span"
-            variant="body2"
-          >
-            {" "}kg
-          </Typography>
-        </Typography>
-      </Paper>
-    </Grid>
-
-    <Grid size={{ xs: 6 }}>
-      <Paper
-        elevation={0}
-        sx={{
-          p: 1,
-          borderRadius: 3,
-          bgcolor: "primary.50",
-        }}
-      >
-        <Typography variant="caption">
-          Altura
-        </Typography>
-
-        <Typography variant="h5">
-          {patient?.height_cm}
-          <Typography
-            component="span"
-            variant="body2"
-          >
-            {" "}cm
-          </Typography>
-        </Typography>
-      </Paper>
-    </Grid>
-  </Grid>
+  ))}
+</Grid>
 
 <Box sx={{ mt: 2 }}>
   <Paper
@@ -543,6 +513,7 @@ const saveCalculation = async () => {
   sx={{
     p: 3,
     borderRadius: 4,
+    
     height: "100%",
   }}
 >
@@ -773,25 +744,30 @@ const saveCalculation = async () => {
   </Paper>
 )}
 
-           <Button
-            variant="contained"
-            sx={{ mt: 3 }}
-            onClick={saveCalculation}
-          >
-            Guardar cálculo
-          </Button>
+          <Box
+  sx={{
+    mt: 3,
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 2,
+    flexWrap: "wrap",
+  }}
+>
+  <Button
+    variant="contained"
+    onClick={saveCalculation}
+  >
+    Guardar cálculo
+  </Button>
 
-   
-            <Button
-              variant="contained"
-              color="success"
-              sx={{ mt: 2 }}
-              onClick={() =>
-                navigate(`/patients/${patient?.id}/diet/generate`)
-              }
-            >
-             Ir a la dieta diaria
-            </Button>
+  <Button
+    variant="contained"
+    color="success"
+    onClick={handleGoToDiet}
+  >
+    Ir a la dieta diaria
+  </Button>
+</Box>
      
 
 

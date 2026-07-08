@@ -20,3 +20,6 @@ Preguntar lo del iva, lo que quieren ver, lo que necesitan, si necesitan exporta
 Los precios de consulta, se pagan cuando van a consulta, asique al crear la cita no hace falta poner efectivo o tarjeta y añadir un estado de pagado y cuando se haga, se añada el precio?
 Calendario el mes visto de otra manera? (si hay 10 citas en un dia, esa fila va a ser enorme)
 Los alimentos, hay excepciones, que hago con ellas?
+
+Comprobar que es solo para una nutri ( pacientes) y que es comun para ambas (contabilidad)
+Falta los avisos a los clientes de las citas.

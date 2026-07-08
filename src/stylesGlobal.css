@@ -1,15 +1,23 @@
-
-.fc .event-long {
-  background-color: #ff9800 !important;
+.fc .status-pending {
+  background: #90a4ae !important;
+  border-color: #90a4ae !important;
   color: white !important;
-  border-radius: 6px;
-  font-weight: 600;
 }
 
-.fc .event-normal {
-  background-color: #1976d2 !important;
+.fc .status-confirmed {
+  background: #1e88e5 !important;
+  border-color: #1e88e5 !important;
   color: white !important;
-  border-radius: 6px;
-  font-weight: 600;
 }
 
+.fc .status-completed {
+  background: #43a047 !important;
+  border-color: #43a047 !important;
+  color: white !important;
+}
+
+.fc .status-cancelled {
+  background: #e53935 !important;
+  border-color: #e53935 !important;
+  color: white !important;
+}
